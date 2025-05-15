@@ -1,0 +1,107 @@
+-- mysql -u root -p
+
+create database restaurante;
+use restaurante;
+
+CREATE TABLE persona (
+    id_persona INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    correo VARCHAR(100) UNIQUE,
+    clave VARCHAR(255),
+    tipo ENUM('admin', 'cliente') DEFAULT 'cliente'
+);
+
+CREATE TABLE plato (
+    id_plato INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    tipo_imagen VARCHAR(50),
+    imagen_plato LONGBLOB
+);
+
+-- ALTER TABLE plato ADD COLUMN tipo_imagen VARCHAR(50) AFTER nombre;
+-- ALTER TABLE plato ADD COLUMN tipo_imagen VARCHAR(50);
+
+
+CREATE TABLE reserva (
+    id_mesa INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_cliente VARCHAR(100) DEFAULT null,
+    correo_cliente VARCHAR(100) DEFAULT null,
+    fecha DATE DEFAULT null,
+    hora TIME DEFAULT null,
+    estado ENUM('libre', 'ocupado', 'cancelado') DEFAULT 'libre'
+);
+
+CREATE TABLE anuncio (
+    id_anuncio INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(100),
+    tipo_imagen VARCHAR(50),
+    imagen_anuncio LONGBLOB,
+    fecha_publicacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_termino TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 3 DAY)
+);
+
+-- ALTER TABLE anuncio ADD COLUMN tipo_imagen VARCHAR(50) AFTER titulo;
+
+
+INSERT INTO reserva (estado) VALUES 
+('libre'), ('libre'), ('libre'), ('libre'), ('libre'),
+('libre'), ('libre'), ('libre'), ('libre'), ('libre'),
+('libre'), ('libre'), ('libre'), ('libre'), ('libre');
+
+
+-- procedimiento para reservar mesas
+DELIMITER $$
+
+CREATE PROCEDURE reservar_mesa (
+    IN p_mesa INT,
+    IN p_nombre_cliente VARCHAR(100),
+    IN p_correo_cliente VARCHAR(100),
+    IN p_fecha DATE,
+    IN p_hora TIME
+)
+BEGIN
+    UPDATE reserva
+    SET nombre_cliente = p_nombre_cliente,
+        correo_cliente = p_correo_cliente,
+        fecha = p_fecha,
+        hora = p_hora,
+        estado = 'ocupado'
+    WHERE id_mesa = p_mesa AND estado = 'libre';
+END$$
+
+DELIMITER ;
+
+
+-- procedimiento para cancelar reservas
+DELIMITER $$
+
+CREATE PROCEDURE cancelar_reserva (
+    IN p_mesa INT
+)
+BEGIN
+    UPDATE reserva
+    SET nombre_cliente = NULL,
+        correo_cliente = NULL,
+        fecha = NULL,
+        hora = NULL,
+        estado = 'libre'
+    WHERE id_mesa = p_mesa AND estado = 'ocupado';
+END$$
+
+DELIMITER ;
+
+-- procedimiento para Ajuestar el dia que durara el anuncio
+DELIMITER //
+
+CREATE PROCEDURE CrearAnuncioConDuracion(
+    IN p_titulo VARCHAR(100),
+    IN p_tipo_imagen VARCHAR(50),
+    IN p_imagen LONGBLOB,
+    IN p_dias INT
+)
+BEGIN
+    INSERT INTO anuncio (titulo, tipo_imagen, imagen_anuncio, fecha_termino)
+    VALUES (p_titulo, p_tipo_imagen, p_imagen, NOW() + INTERVAL p_dias DAY);
+END //
+
+DELIMITER ;
